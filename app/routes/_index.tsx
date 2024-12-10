@@ -15,7 +15,7 @@ export default function Index() {
     <div className="flex h-screen items-center justify-center">
       <Assitant />
       <Sidebar />
-      <div className="w-full bg-slate-600 h-full">
+      <div className="w-full h-full">
         <PythonEditor />
       </div>
     </div>
