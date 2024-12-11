@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SocketIO Audio Stream Test</title>
+  </head>
+  <body>
+    <h1>Press and hold "T" to stream audio</h1>
+    <p>Status: <span id="status">Disconnected</span></p>
+
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+      const socket = io.connect("/audio");
+      const statusText = document.getElementById("status");
+
+      let mediaRecorder;
+      let audioChunks = [];
+      let isStreaming = false;
+
+      // Connection event handlers
+      socket.on("connect", () => {
+        statusText.textContent = "Connected";
+      });
+
+      socket.on("disconnect", () => {
+        statusText.textContent = "Disconnected";
+      });
+
+      // Start streaming audio
+      async function startAudioStream() {
+        if (isStreaming) return; // Prevent multiple streams
+        isStreaming = true;
+        socket.emit("start_stream");
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          mediaRecorder = new MediaRecorder(stream);
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              socket.emit("stream", event.data);
+              console.log("Sent audio chunk:", event.data);
+            }
+          };
+
+          mediaRecorder.start(250); // Send audio data every 250ms
+          console.log("Audio streaming started.");
+        } catch (err) {
+          console.error("Error accessing microphone:", err);
+          alert("Failed to access microphone. Please allow microphone access.");
+          isStreaming = false;
+        }
+      }
+
+      // Stop streaming audio
+      function stopAudioStream() {
+        if (!isStreaming) return;
+        mediaRecorder.stop();
+        console.log("Audio streaming stopped.");
+        socket.emit("stop_stream");
+
+        isStreaming = false;
+      }
+
+      // Keydown and Keyup event listeners for "T" key
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "T" || event.key === "t") {
+          startAudioStream();
+        }
+      });
+
+      document.addEventListener("keyup", (event) => {
+        if (event.key === "T" || event.key === "t") {
+          stopAudioStream();
+        }
+      });
+    </script>
+  </body>
+</html>
