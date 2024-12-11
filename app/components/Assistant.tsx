@@ -1,11 +1,26 @@
 // import React from 'react'
 import { motion } from "framer-motion";
 import { UserRound } from "lucide-react";
+import { useEffect } from "react";
 import { useGlobal } from "~/context/GlobalContext";
+import { useSocket } from "~/context/SocketContext";
 
 export default function Assitant() {
   const { assistantMinimized, toggleAssistantVisible } = useGlobal();
-  //   const [voiceActivityActive, setVoiceActivityActive] = useState(false);
+  const { testSocket } = useSocket();
+
+  useEffect(() => {
+    if (!testSocket) return;
+
+    testSocket.on("speak", (message) => {
+      const utterance = new SpeechSynthesisUtterance(message);
+      speechSynthesis.speak(utterance);
+    });
+
+    return () => {
+      testSocket.off("speak");
+    };
+  }, [testSocket]);
 
   return (
     <motion.div
